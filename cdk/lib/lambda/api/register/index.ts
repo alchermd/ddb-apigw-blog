@@ -1,33 +1,45 @@
 import { type APIGatewayEvent, type APIGatewayProxyResult, type Context } from 'aws-lambda'
-import data from '../data'
+import data from '@/lambda/api/data'
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb'
-
-interface RegisterPayload {
-  username: string
-  password: string
-}
+import { ZodError } from 'zod'
+import { type RegisterPayload, registerPayloadSchema } from '@/lambda/api/register/validator'
+import { serverError, success, userError } from '@/lambda/api/response'
 
 export const handler = async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
-  const payload: RegisterPayload = JSON.parse(String(event.body))
-  let response
+  const unsafePayload: RegisterPayload = JSON.parse(String(event.body))
+
+  let payload
   try {
-    response = await data.createUser(payload.username, payload.password)
+    payload = registerPayloadSchema.parse(unsafePayload)
   } catch (e) {
     console.log(e)
-    if (e instanceof ConditionalCheckFailedException) {
-      return {
-        statusCode: 422,
-        body: JSON.stringify({
-          error: 'Username is already taken.'
-        })
-      }
+
+    if (e instanceof ZodError) {
+      return await userError(e.format())
     }
+
+    return await serverError()
   }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: response
-    })
+  let user
+  try {
+    user = await data.createUser(payload.username, payload.password)
+  } catch (e) {
+    console.log(e)
+
+    if (e instanceof ConditionalCheckFailedException) {
+      const error = {
+        username: {
+          _errors: ['Username is already taken']
+        }
+      }
+
+      return await userError(error)
+    }
+
+    return await serverError()
   }
+
+  console.log(`User <${user.username}> has been successfully registered.`)
+  return await success('Registration successful', 201)
 }
