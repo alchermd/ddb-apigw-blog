@@ -85,6 +85,27 @@ class Data {
 
     return user
   }
+
+  async createApiToken (user: User): Promise<string> {
+    const token = crypto.randomUUID().replaceAll('-', '')
+    // Token expires 30 days from now
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 30)
+
+    const payload = {
+      Item: {
+        PK: `USER#${user.username}`,
+        SK: `APIKEY#${user.username}`,
+        token,
+        expiresAt: expiresAt.toString()
+      },
+      TableName: this.tableName
+    }
+    const command = new PutCommand(payload)
+    await this.ddb.send(command)
+
+    return token
+  }
 }
 
 export default new Data()

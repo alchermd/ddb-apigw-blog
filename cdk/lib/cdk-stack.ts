@@ -54,6 +54,6 @@ export class CdkStack extends cdk.Stack {
     })
     const login = api.root.addResource('login')
     login.addMethod('POST', new apigw.LambdaIntegration(loginHandler))
-    blogTable.grantReadData(loginHandler)
+    blogTable.grantReadWriteData(loginHandler)
   }
 }

@@ -25,5 +25,10 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
 
   const authenticated = await authenticate(user, payload.password)
 
-  return await success(`Authenticated: ${authenticated}`, 201)
+  if (authenticated) {
+    const token = await data.createApiToken(user)
+    return await success({ token }, 201)
+  }
+
+  return await userError({ error: 'Invalid credentials.' }, 401)
 }

@@ -1,4 +1,5 @@
 import type { APIGatewayProxyResult } from 'aws-lambda'
+import { object } from 'zod'
 
 export const response = async (body: object, statusCode: number): Promise<APIGatewayProxyResult> => {
   return {
@@ -7,8 +8,14 @@ export const response = async (body: object, statusCode: number): Promise<APIGat
   }
 }
 
-export const success = async (message: string, statusCode: number = 200): Promise<APIGatewayProxyResult> => {
-  return await response({ message }, statusCode)
+export const success = async (message: string | Record<string, unknown>, statusCode: number = 200): Promise<APIGatewayProxyResult> => {
+  let body
+  if (typeof message === 'string') {
+    body = { message }
+  } else {
+    body = message
+  }
+  return await response(body, statusCode)
 }
 
 export const userError = async (body: object, statusCode: number = 422): Promise<APIGatewayProxyResult> => {
