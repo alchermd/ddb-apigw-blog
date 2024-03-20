@@ -1,6 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 
 class User {
   username: string
@@ -17,6 +17,13 @@ class User {
   async hashPassword (): Promise<void> {
     if (this.rawPassword !== null) {
       this.hashedPassword = await hashPassword(this.rawPassword)
+    }
+  }
+
+  toJson (): Record<string, unknown> {
+    return {
+      username: this.username,
+      createdAt: this.createdAt
     }
   }
 }
@@ -93,18 +100,63 @@ class Data {
     expiresAt.setDate(expiresAt.getDate() + 30)
 
     const payload = {
-      Item: {
+      Key: {
         PK: `USER#${user.username}`,
-        SK: `APIKEY#${user.username}`,
-        token,
-        expiresAt: expiresAt.toString()
+        SK: `META#${user.username}`
       },
+      ExpressionAttributeNames: {
+        '#apikey': 'apiKey',
+        '#apikeyexpire': 'apiKeyExpiresAt',
+        '#gsi1pk': 'GSI1PK',
+        '#gsi1sk': 'GSI1SK'
+      },
+      ExpressionAttributeValues: {
+        ':apikey': token,
+        ':apikeyexpire': expiresAt.toString(),
+        ':gsi1pk': `APIKEY#${token}`,
+        ':gsi1sk': `APIKEY#${token}`
+      },
+      UpdateExpression: 'SET #apikey = :apikey, #apikeyexpire = :apikeyexpire, #gsi1pk = :gsi1pk, #gsi1sk = :gsi1sk',
       TableName: this.tableName
     }
-    const command = new PutCommand(payload)
+    const command = new UpdateCommand(payload)
     await this.ddb.send(command)
 
     return token
+  }
+
+  async getUserFromApiKey (token: string): Promise<User> {
+    console.log(`APIKEY#${token}`)
+
+    const payload = {
+      ExpressionAttributeNames: {
+        '#gsi1pk': 'GSI1PK',
+        '#gsi1sk': 'GSI1SK'
+      },
+      ExpressionAttributeValues: {
+        ':apikey': `APIKEY#${token}`
+      },
+      KeyConditionExpression: '#gsi1pk = :apikey AND #gsi1sk = :apikey',
+      IndexName: 'GSI1',
+      TableName: this.tableName
+    }
+    const command = new QueryCommand(payload)
+    // TODO: Handle not found errors
+    const response = await this.ddb.send(command)
+    console.log(response)
+
+    if (response.Items === undefined || response.Count === 0) {
+      throw new Error('User not found.')
+    }
+
+    const item = response.Items[0]
+    console.log(item)
+
+    const user = new User(item.username as string)
+    user.hashedPassword = item.hashedPassword as string
+    user.createdAt = new Date(item.createdAt as string)
+
+    return user
   }
 }
 
