@@ -22,8 +22,10 @@ export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<AP
   const methodArn = event.methodArn
 
   try {
-    // TODO: Handle key expiration
-    await data.getUserFromApiKey(event.authorizationToken)
+    const isValid = await data.checkApiKeyValidity(event.authorizationToken)
+    if (!isValid) {
+      return policy('Deny', methodArn)
+    }
   } catch (e) {
     console.log(e)
     return policy('Deny', methodArn)

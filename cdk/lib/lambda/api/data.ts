@@ -9,6 +9,7 @@ export class User {
   username: string
   hashedPassword: string
   createdAt: Date
+  apiKeyExpiresAt: Date
   private readonly rawPassword: string | null
 
   constructor (username: string, rawPassword: string | null = null) {
@@ -156,8 +157,14 @@ class Data {
     const user = new User(item.username as string)
     user.hashedPassword = item.hashedPassword as string
     user.createdAt = new Date(item.createdAt as string)
+    user.apiKeyExpiresAt = new Date(item.apiKeyExpiresAt as string)
 
     return user
+  }
+
+  async checkApiKeyValidity (token: string): Promise<boolean> {
+    const user = await this.getUserFromApiKey(token)
+    return user.apiKeyExpiresAt > new Date()
   }
 }
 
