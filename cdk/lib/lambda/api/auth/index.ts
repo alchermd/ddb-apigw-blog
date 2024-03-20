@@ -18,9 +18,11 @@ function policy (effect: 'Allow' | 'Deny', arn: string): APIGatewayAuthorizerRes
 }
 
 export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<APIGatewayAuthorizerResult> => {
+  console.log(event)
   const methodArn = event.methodArn
 
   try {
+    // TODO: Handle key expiration
     await data.getUserFromApiKey(event.authorizationToken)
   } catch (e) {
     console.log(e)

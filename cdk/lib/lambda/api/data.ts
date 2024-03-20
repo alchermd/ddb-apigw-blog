@@ -2,7 +2,10 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 
-class User {
+export class UserNotFoundError extends Error {}
+export class ApiKeyNotFoundError extends Error {}
+
+export class User {
   username: string
   hashedPassword: string
   createdAt: Date
@@ -80,10 +83,9 @@ class Data {
       TableName: this.tableName
     }
     const command = new GetCommand(payload)
-    // TODO: Handle not found errors
     const response = await this.ddb.send(command)
     if (response.Item === undefined) {
-      throw new Error('Something went wrong.')
+      throw new UserNotFoundError(`${username} does not exist.`)
     }
 
     const user = new User(response.Item.username as string)
@@ -93,9 +95,9 @@ class Data {
     return user
   }
 
-  async createApiToken (user: User): Promise<string> {
-    const token = crypto.randomUUID().replaceAll('-', '')
-    // Token expires 30 days from now
+  async createApiKey (user: User): Promise<string> {
+    const apiKey = crypto.randomUUID().replaceAll('-', '')
+    // API Key expires 30 days from now
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 30)
 
@@ -111,10 +113,10 @@ class Data {
         '#gsi1sk': 'GSI1SK'
       },
       ExpressionAttributeValues: {
-        ':apikey': token,
+        ':apikey': apiKey,
         ':apikeyexpire': expiresAt.toString(),
-        ':gsi1pk': `APIKEY#${token}`,
-        ':gsi1sk': `APIKEY#${token}`
+        ':gsi1pk': `APIKEY#${apiKey}`,
+        ':gsi1sk': `APIKEY#${apiKey}`
       },
       UpdateExpression: 'SET #apikey = :apikey, #apikeyexpire = :apikeyexpire, #gsi1pk = :gsi1pk, #gsi1sk = :gsi1sk',
       TableName: this.tableName
@@ -122,11 +124,11 @@ class Data {
     const command = new UpdateCommand(payload)
     await this.ddb.send(command)
 
-    return token
+    return apiKey
   }
 
-  async getUserFromApiKey (token: string): Promise<User> {
-    console.log(`APIKEY#${token}`)
+  async getUserFromApiKey (apiKey: string): Promise<User> {
+    console.log(`APIKEY#${apiKey}`)
 
     const payload = {
       ExpressionAttributeNames: {
@@ -134,19 +136,18 @@ class Data {
         '#gsi1sk': 'GSI1SK'
       },
       ExpressionAttributeValues: {
-        ':apikey': `APIKEY#${token}`
+        ':apikey': `APIKEY#${apiKey}`
       },
       KeyConditionExpression: '#gsi1pk = :apikey AND #gsi1sk = :apikey',
       IndexName: 'GSI1',
       TableName: this.tableName
     }
     const command = new QueryCommand(payload)
-    // TODO: Handle not found errors
     const response = await this.ddb.send(command)
     console.log(response)
 
     if (response.Items === undefined || response.Count === 0) {
-      throw new Error('User not found.')
+      throw new ApiKeyNotFoundError(`${apiKey} does not exist.`)
     }
 
     const item = response.Items[0]
