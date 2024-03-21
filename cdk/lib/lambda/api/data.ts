@@ -32,6 +32,39 @@ export class User {
   }
 }
 
+export class Post {
+  title: string
+  body: string
+  slug: string
+  createdAt: Date
+
+  constructor (title: string, body: string, slug: string, createdAt?: Date) {
+    this.title = title
+    this.body = body
+    this.slug = slug
+
+    if (createdAt !== undefined) {
+      this.createdAt = createdAt
+    } else {
+      this.createdAt = new Date()
+    }
+  }
+
+  toJson (): Record<string, unknown> {
+    return {
+      title: this.title,
+      body: this.body,
+      slug: this.slug
+    }
+  }
+}
+
+export interface PostData {
+  title: string
+  body: string
+  slug: string
+}
+
 async function hashPassword (rawPassword: string): Promise<string> {
   const salt = randomBytes(16).toString('hex')
   const buffer = scryptSync(rawPassword, salt, 64)
@@ -165,6 +198,30 @@ class Data {
   async checkApiKeyValidity (token: string): Promise<boolean> {
     const user = await this.getUserFromApiKey(token)
     return user.apiKeyExpiresAt > new Date()
+  }
+
+  async createPost (postData: PostData, user: User): Promise<Post> {
+    const post = new Post(postData.title, postData.body, postData.slug)
+
+    const payload = {
+      Item: {
+        PK: `USER#${user.username}`,
+        SK: `POST#${post.slug}`,
+        GSI1PK: `USER#${user.username}`,
+        GSI1SK: `POST#${post.createdAt.toString()}`,
+        GSI2PK: `POST#${post.slug}`,
+        title: postData.title,
+        body: postData.body,
+        slug: postData.slug,
+        createdAt: post.createdAt.toString()
+      },
+      ConditionExpression: 'attribute_not_exists(PK) AND attribute_not_exists(SK)',
+      TableName: this.tableName
+    }
+    const command = new PutCommand(payload)
+    await this.ddb.send(command)
+
+    return post
   }
 }
 

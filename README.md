@@ -49,7 +49,7 @@ Below are notes and artifacts created pre-development to give structure to the p
             <td></td>
         </tr>
         <tr>
-            <td rowspan="5">Post</td>
+            <td rowspan="6">Post</td>
             <td>Create Post</td>
             <td>Main Table</td>
             <td></td>
@@ -62,14 +62,20 @@ Below are notes and artifacts created pre-development to give structure to the p
             <td></td>
         </tr>
         <tr>
-            <td>Get all Posts sorted by creation date</td>
+            <td>Get Post by Slug</td>
+            <td>Main Table</td>
+            <td>PK=USER#&lt;username> AND SK=POST#&lt;slug></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Get all Posts by User, sorted by creation date</td>
             <td>GSI1</td>
-            <td>PK=POST</td>
+            <td>PK=USER#&lt;username> AND SK=USER#&lt;username></td>
             <td></td>
         </tr>
         <tr>
             <td>Get post and all comments</td>
-            <td>Main Table</td>
+            <td>GSI2</td>
             <td>PK=POST#&lt;slug></td>
             <td></td>
         </tr>
@@ -91,9 +97,9 @@ Below are notes and artifacts created pre-development to give structure to the p
 
 ### Entity Primary Keys
 
-| Entity  | PK               | SK                 | GSI1PK           | GSI1SK             |
-|---------|------------------|--------------------|------------------|--------------------| 
-| User    | USER#\<username> | META#\<username>   | APIKEY#\<apikey> |                    | 
-| Post    | USER#\<username> | POST#\<created_at> | POST             | POST#\<created_at> |
-| Comment | POST#\<slug>     | COMMENT#\<uuid>    |                  |                    |
+| Entity  | PK                    | SK               | GSI1PK           | GSI1SK             | GSI2PK       | GSI2SK                |
+|---------|-----------------------|------------------|------------------|--------------------|--------------|-----------------------|
+| User    | USER#\<username>      | META#\<username> | APIKEY#\<apikey> |                    |              |                       |
+| Post    | USER#\<username>      | POST#\<slug>     | USER#\<username> | POST#\<created_at> | POST#\<slug> |                       |
+| Comment | COMMENT#\<created_at> |                  |                  |                    | POST#\<slug> | COMMENT#\<created_at> |
 

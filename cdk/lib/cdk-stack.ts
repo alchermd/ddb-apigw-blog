@@ -76,5 +76,14 @@ export class CdkStack extends cdk.Stack {
     const me = api.root.addResource('me')
     me.addMethod('GET', new apigw.LambdaIntegration(meHandler), { authorizer: auth })
     blogTable.grantReadData(meHandler)
+
+    const createPostHandler = new NodejsFunction(this, 'CreatePostHandler', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'handler',
+      entry: path.join(__dirname, 'lambda/api/posts/create.ts')
+    })
+    const createPost = api.root.addResource('posts')
+    createPost.addMethod('POST', new apigw.LambdaIntegration(createPostHandler), { authorizer: auth })
+    blogTable.grantReadWriteData(createPostHandler)
   }
 }
