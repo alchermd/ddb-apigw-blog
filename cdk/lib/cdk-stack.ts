@@ -84,8 +84,8 @@ export class CdkStack extends cdk.Stack {
       handler: 'handler',
       entry: path.join(__dirname, 'lambda/api/posts/create.ts')
     })
-    const createPost = api.root.addResource('posts')
-    createPost.addMethod('POST', new apigw.LambdaIntegration(createPostHandler), { authorizer: auth })
+    const posts = api.root.addResource('posts')
+    posts.addMethod('POST', new apigw.LambdaIntegration(createPostHandler), { authorizer: auth })
     blogTable.grantReadWriteData(createPostHandler)
 
     const users = api.root.addResource('users')
@@ -96,8 +96,8 @@ export class CdkStack extends cdk.Stack {
       handler: 'handler',
       entry: path.join(__dirname, 'lambda/api/users/posts/index.ts')
     })
-    const userPost = user.addResource('posts')
-    userPost.addMethod('GET', new apigw.LambdaIntegration(userPostHandler), { authorizer: auth })
+    const userPosts = user.addResource('posts')
+    userPosts.addMethod('GET', new apigw.LambdaIntegration(userPostHandler), { authorizer: auth })
     blogTable.grantReadData(userPostHandler)
   }
 }
