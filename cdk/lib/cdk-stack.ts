@@ -34,6 +34,18 @@ export class CdkStack extends cdk.Stack {
             type: dynamodb.AttributeType.STRING
           },
           projectionType: ProjectionType.ALL
+        },
+        {
+          indexName: 'GSI2',
+          partitionKey: {
+            name: 'GSI2PK',
+            type: dynamodb.AttributeType.STRING
+          },
+          sortKey: {
+            name: 'GSI2SK',
+            type: dynamodb.AttributeType.STRING
+          },
+          projectionType: ProjectionType.ALL
         }
       ]
     })
@@ -99,5 +111,14 @@ export class CdkStack extends cdk.Stack {
     const userPosts = user.addResource('posts')
     userPosts.addMethod('GET', new apigw.LambdaIntegration(userPostHandler), { authorizer: auth })
     blogTable.grantReadData(userPostHandler)
+
+    const postDetailHandler = new NodejsFunction(this, 'PostDetailHandler', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'handler',
+      entry: path.join(__dirname, 'lambda/api/users/posts/post/get.ts')
+    })
+    const userPost = userPosts.addResource('{post}')
+    userPost.addMethod('GET', new apigw.LambdaIntegration(postDetailHandler), { authorizer: auth })
+    blogTable.grantReadData(postDetailHandler)
   }
 }

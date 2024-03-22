@@ -8,6 +8,9 @@ export class UserNotFoundError extends Error {
 export class ApiKeyNotFoundError extends Error {
 }
 
+export class PostNotFound extends Error {
+}
+
 export class User {
   username: string
   hashedPassword: string
@@ -213,6 +216,7 @@ class Data {
         GSI1PK: `USER#${user.username}`,
         GSI1SK: `POST#${post.createdAt.toString()}`,
         GSI2PK: `POST#${post.slug}`,
+        GSI2SK: `POST#${post.slug}`,
         title: postData.title,
         body: postData.body,
         slug: postData.slug,
@@ -256,6 +260,31 @@ class Data {
       item.slug as string,
       new Date(item.createdAt as string)
     ))
+  }
+
+  async getPost (username: string, slug: string): Promise<Post> {
+    console.log(`Fetching post: ${username}/${slug}`)
+    const payload = {
+      Key: {
+        PK: `USER#${username}`,
+        SK: `POST#${slug}`
+      },
+      TableName: this.tableName
+    }
+    const command = new GetCommand(payload)
+    const response = await this.ddb.send(command)
+    console.log(response)
+
+    if (response.Item === undefined) {
+      throw new UserNotFoundError(`${username} does not exist.`)
+    }
+
+    return new Post(
+      response.Item.title as string,
+      response.Item.body as string,
+      response.Item.slug as string,
+      new Date(response.Item.createdAt as string)
+    )
   }
 }
 

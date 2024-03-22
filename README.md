@@ -100,6 +100,6 @@ Below are notes and artifacts created pre-development to give structure to the p
 | Entity  | PK                    | SK               | GSI1PK           | GSI1SK             | GSI2PK       | GSI2SK                |
 |---------|-----------------------|------------------|------------------|--------------------|--------------|-----------------------|
 | User    | USER#\<username>      | META#\<username> | APIKEY#\<apikey> |                    |              |                       |
-| Post    | USER#\<username>      | POST#\<slug>     | USER#\<username> | POST#\<created_at> | POST#\<slug> |                       |
+| Post    | USER#\<username>      | POST#\<slug>     | USER#\<username> | POST#\<created_at> | POST#\<slug> | POST#\<slug>          |
 | Comment | COMMENT#\<created_at> |                  |                  |                    | POST#\<slug> | COMMENT#\<created_at> |
 

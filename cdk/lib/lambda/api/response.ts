@@ -1,5 +1,4 @@
 import type { APIGatewayProxyResult } from 'aws-lambda'
-import { object } from 'zod'
 
 export const response = async (message: string | Record<string, unknown> | Array<Record<string, unknown>>, statusCode: number): Promise<APIGatewayProxyResult> => {
   return {
