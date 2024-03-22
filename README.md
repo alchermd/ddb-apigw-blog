@@ -27,20 +27,20 @@ Below are notes and artifacts created pre-development to give structure to the p
             <td>Create User</td>
             <td>Main Table</td>
             <td></td>
-            <td></td>
+            <td>POST /register</td>
         </tr>
         <tr>
             <td>Get User information</td>
             <td>Main Table</td>
             <td>PK=USER#&lt;username> AND SK=META#&lt;username></td>
-            <td></td>
+            <td>GET /me</td>
         </tr>
         <tr>
             <td rowspan="2">API Key</td>
             <td>Create API Key for User</td>            
             <td>Main Table</td>
             <td></td>
-            <td></td>
+            <td>POST /login</td>
         </tr>
         <tr>
             <td>Get User for API Key</td>
@@ -53,44 +53,32 @@ Below are notes and artifacts created pre-development to give structure to the p
             <td>Create Post</td>
             <td>Main Table</td>
             <td></td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>Get all Posts by User</td>
-            <td>Main Table</td>
-            <td>PK=USER#&lt;username> AND SK=begins_with(POST#)</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>Get Post by Slug</td>
-            <td>Main Table</td>
-            <td>PK=USER#&lt;username> AND SK=POST#&lt;slug></td>
-            <td></td>
+            <td>POST /posts</td>
         </tr>
         <tr>
             <td>Get all Posts by User, sorted by creation date</td>
             <td>GSI1</td>
             <td>PK=USER#&lt;username> AND SK=begins_with(POST#)</td>
-            <td></td>
+            <td>GET /users/{username}/posts</td>
         </tr>
         <tr>
             <td>Get post and all comments</td>
             <td>GSI2</td>
             <td>PK=POST#&lt;slug></td>
-            <td></td>
+            <td>GET /users/{username}/posts/{slug}</td>
         </tr>
         <tr>
             <td>Delete Post</td>
+            <td>Main Table</td>
             <td></td>
-            <td></td>
-            <td></td>
+            <td>DELETE /users/{username}/posts/{slug}</td>
         </tr>
         <tr>
             <td>Comment</td>
             <td>Add Comment to a Post</td>
+            <td>Main Table</td>
             <td></td>
-            <td></td>
-            <td></td>
+            <td>POST /users/{username}/posts/{slug}/comments</td>
         </tr>
     </tbody>
 </table>
