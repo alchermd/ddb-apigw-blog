@@ -2,8 +2,11 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 
-export class UserNotFoundError extends Error {}
-export class ApiKeyNotFoundError extends Error {}
+export class UserNotFoundError extends Error {
+}
+
+export class ApiKeyNotFoundError extends Error {
+}
 
 export class User {
   username: string
@@ -222,6 +225,37 @@ class Data {
     await this.ddb.send(command)
 
     return post
+  }
+
+  async getPosts (username: string): Promise<Post[]> {
+    console.log(`Fetching posts for user ${username}`)
+
+    const payload = {
+      ExpressionAttributeNames: {
+        '#pk': 'PK',
+        '#sk': 'SK'
+      },
+      ExpressionAttributeValues: {
+        ':username': `USER#${username}`,
+        ':postprefix': 'POST#'
+      },
+      KeyConditionExpression: '#pk = :username AND begins_with(#sk, :postprefix)',
+      TableName: this.tableName
+    }
+    const command = new QueryCommand(payload)
+    const response = await this.ddb.send(command)
+    console.log(response)
+
+    if (response.Items === undefined) {
+      throw new Error('Returned items is undefined.')
+    }
+
+    return response.Items.map(item => new Post(
+      item.string as string,
+      item.body as string,
+      item.slug as string,
+      new Date(item.createdAt as string)
+    ))
   }
 }
 

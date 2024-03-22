@@ -6,6 +6,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda'
 import { type Construct } from 'constructs'
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs'
 import * as path from 'node:path'
+import { Duration } from 'aws-cdk-lib'
 
 export class CdkStack extends cdk.Stack {
   constructor (scope: Construct, id: string, props?: cdk.StackProps) {
@@ -46,7 +47,8 @@ export class CdkStack extends cdk.Stack {
       entry: path.join(__dirname, 'lambda/api/auth/index.ts')
     })
     const auth = new apigw.TokenAuthorizer(this, 'TokenAuthorizer', {
-      handler: authHandler
+      handler: authHandler,
+      resultsCacheTtl: Duration.seconds(0)
     })
     blogTable.grantReadData(authHandler)
 
@@ -85,5 +87,17 @@ export class CdkStack extends cdk.Stack {
     const createPost = api.root.addResource('posts')
     createPost.addMethod('POST', new apigw.LambdaIntegration(createPostHandler), { authorizer: auth })
     blogTable.grantReadWriteData(createPostHandler)
+
+    const users = api.root.addResource('users')
+    const user = users.addResource('{username}')
+
+    const userPostHandler = new NodejsFunction(this, 'UserPostHandler', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'handler',
+      entry: path.join(__dirname, 'lambda/api/users/posts/index.ts')
+    })
+    const userPost = user.addResource('posts')
+    userPost.addMethod('GET', new apigw.LambdaIntegration(userPostHandler), { authorizer: auth })
+    blogTable.grantReadData(userPostHandler)
   }
 }
