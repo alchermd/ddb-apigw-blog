@@ -70,7 +70,7 @@ Below are notes and artifacts created pre-development to give structure to the p
         <tr>
             <td>Get all Posts by User, sorted by creation date</td>
             <td>GSI1</td>
-            <td>PK=USER#&lt;username> AND SK=USER#&lt;username></td>
+            <td>PK=USER#&lt;username> AND SK=begins_with(POST#)</td>
             <td></td>
         </tr>
         <tr>

@@ -60,7 +60,8 @@ export class Post {
     return {
       title: this.title,
       body: this.body,
-      slug: this.slug
+      slug: this.slug,
+      createdAt: this.createdAt.toISOString()
     }
   }
 }
@@ -103,7 +104,7 @@ class Data {
         SK: `META#${user.username}`,
         username: user.username,
         hashedPassword: user.hashedPassword,
-        createdAt: user.createdAt.toString()
+        createdAt: user.createdAt.toISOString()
       },
       ConditionExpression: 'attribute_not_exists(PK) AND attribute_not_exists(SK)',
       TableName: this.tableName
@@ -214,13 +215,13 @@ class Data {
         PK: `USER#${user.username}`,
         SK: `POST#${post.slug}`,
         GSI1PK: `USER#${user.username}`,
-        GSI1SK: `POST#${post.createdAt.toString()}`,
+        GSI1SK: `POST#${post.createdAt.toISOString()}`,
         GSI2PK: `POST#${post.slug}`,
         GSI2SK: `POST#${post.slug}`,
         title: postData.title,
         body: postData.body,
         slug: postData.slug,
-        createdAt: post.createdAt.toString()
+        createdAt: post.createdAt.toISOString()
       },
       ConditionExpression: 'attribute_not_exists(PK) AND attribute_not_exists(SK)',
       TableName: this.tableName
@@ -236,14 +237,16 @@ class Data {
 
     const payload = {
       ExpressionAttributeNames: {
-        '#pk': 'PK',
-        '#sk': 'SK'
+        '#gsi1pk': 'GSI1PK',
+        '#gsi1sk': 'GSI1SK'
       },
       ExpressionAttributeValues: {
         ':username': `USER#${username}`,
         ':postprefix': 'POST#'
       },
-      KeyConditionExpression: '#pk = :username AND begins_with(#sk, :postprefix)',
+      IndexName: 'GSI1',
+      KeyConditionExpression: '#gsi1pk = :username AND begins_with(#gsi1sk, :postprefix)',
+      ScanIndexForward: true,
       TableName: this.tableName
     }
     const command = new QueryCommand(payload)
