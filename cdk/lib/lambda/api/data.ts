@@ -72,6 +72,36 @@ export interface PostData {
   slug: string
 }
 
+export class Comment {
+  uuid: string
+  post: string
+  author: string
+  body: string
+  createdAt: Date
+
+  constructor (post: string, author: string, body: string, createdAt?: Date) {
+    this.uuid = crypto.randomUUID().replaceAll('-', '')
+    this.post = post
+    this.author = author
+    this.body = body
+    this.createdAt = createdAt ?? new Date()
+  }
+
+  toJson (): Record<string, any> {
+    return {
+      uuid: this.uuid,
+      post: this.post,
+      author: this.author,
+      body: this.body,
+      createdAt: this.createdAt.toISOString()
+    }
+  }
+}
+
+export interface CommentData {
+  body: string
+}
+
 async function hashPassword (rawPassword: string): Promise<string> {
   const salt = randomBytes(16).toString('hex')
   const buffer = scryptSync(rawPassword, salt, 64)
@@ -209,15 +239,16 @@ class Data {
 
   async createPost (postData: PostData, user: User): Promise<Post> {
     const post = new Post(postData.title, postData.body, postData.slug)
+    const slug = `${user.username}/${post.slug}`
 
     const payload = {
       Item: {
         PK: `USER#${user.username}`,
-        SK: `POST#${post.slug}`,
+        SK: `POST#${slug}`,
         GSI1PK: `USER#${user.username}`,
         GSI1SK: `POST#${post.createdAt.toISOString()}`,
-        GSI2PK: `POST#${post.slug}`,
-        GSI2SK: `POST#${post.slug}`,
+        GSI2PK: `POST#${slug}`,
+        GSI2SK: `POST#${slug}`,
         title: postData.title,
         body: postData.body,
         slug: postData.slug,
@@ -288,6 +319,30 @@ class Data {
       response.Item.slug as string,
       new Date(response.Item.createdAt as string)
     )
+  }
+
+  async createComment (postSlug: string, author: string, commentData: CommentData): Promise<Comment> {
+    const comment = new Comment(postSlug, author, commentData.body)
+
+    const payload = {
+      Item: {
+        PK: `COMMENT#${comment.uuid}`,
+        SK: `COMMENT#${comment.uuid}`,
+        GSI2PK: `POST#${comment.post}`,
+        GSI2SK: `COMMENT#${comment.createdAt.toISOString()}`,
+        uuid: comment.uuid,
+        post: comment.post,
+        author: comment.author,
+        body: comment.body,
+        createdAt: comment.createdAt.toISOString()
+      },
+      ConditionExpression: 'attribute_not_exists(PK) AND attribute_not_exists(SK)',
+      TableName: this.tableName
+    }
+    const command = new PutCommand(payload)
+    await this.ddb.send(command)
+
+    return comment
   }
 }
 

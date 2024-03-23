@@ -120,5 +120,14 @@ export class CdkStack extends cdk.Stack {
     const userPost = userPosts.addResource('{post}')
     userPost.addMethod('GET', new apigw.LambdaIntegration(postDetailHandler), { authorizer: auth })
     blogTable.grantReadData(postDetailHandler)
+
+    const postCommentsHandler = new NodejsFunction(this, 'PostCommentsHandler', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'handler',
+      entry: path.join(__dirname, 'lambda/api/users/posts/post/comments/post.ts')
+    })
+    const postComments = userPost.addResource('comments')
+    postComments.addMethod('POST', new apigw.LambdaIntegration(postCommentsHandler), { authorizer: auth })
+    blogTable.grantReadWriteData(postCommentsHandler)
   }
 }
