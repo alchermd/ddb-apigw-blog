@@ -49,7 +49,7 @@ Below are notes and artifacts created pre-development to give structure to the p
             <td></td>
         </tr>
         <tr>
-            <td rowspan="6">Post</td>
+            <td rowspan="4">Post</td>
             <td>Create Post</td>
             <td>Main Table</td>
             <td></td>
