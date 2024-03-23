@@ -42,18 +42,17 @@ export class Post {
   title: string
   body: string
   slug: string
+  author: string
   createdAt: Date
+  comments: Comment[]
 
-  constructor (title: string, body: string, slug: string, createdAt?: Date) {
+  constructor (title: string, body: string, slug: string, author: string, createdAt?: Date, comments?: Comment[]) {
     this.title = title
     this.body = body
-    this.slug = slug
-
-    if (createdAt !== undefined) {
-      this.createdAt = createdAt
-    } else {
-      this.createdAt = new Date()
-    }
+    this.slug = `${author}/${slug}`
+    this.author = author
+    this.createdAt = createdAt ?? new Date()
+    this.comments = comments ?? []
   }
 
   toJson (): Record<string, unknown> {
@@ -61,7 +60,9 @@ export class Post {
       title: this.title,
       body: this.body,
       slug: this.slug,
-      createdAt: this.createdAt.toISOString()
+      author: this.author,
+      createdAt: this.createdAt.toISOString(),
+      comments: this.comments.map(comment => comment.toJson())
     }
   }
 }
@@ -79,8 +80,8 @@ export class Comment {
   body: string
   createdAt: Date
 
-  constructor (post: string, author: string, body: string, createdAt?: Date) {
-    this.uuid = crypto.randomUUID().replaceAll('-', '')
+  constructor (post: string, author: string, body: string, createdAt?: Date, uuid?: string) {
+    this.uuid = uuid ?? crypto.randomUUID().replaceAll('-', '')
     this.post = post
     this.author = author
     this.body = body
@@ -238,18 +239,18 @@ class Data {
   }
 
   async createPost (postData: PostData, user: User): Promise<Post> {
-    const post = new Post(postData.title, postData.body, postData.slug)
-    const slug = `${user.username}/${post.slug}`
+    const post = new Post(postData.title, postData.body, postData.slug, user.username)
 
     const payload = {
       Item: {
         PK: `USER#${user.username}`,
-        SK: `POST#${slug}`,
+        SK: `POST#${post.slug}`,
         GSI1PK: `USER#${user.username}`,
         GSI1SK: `POST#${post.createdAt.toISOString()}`,
-        GSI2PK: `POST#${slug}`,
-        GSI2SK: `POST#${slug}`,
+        GSI2PK: `POST#${post.slug}`,
+        GSI2SK: `POST#${post.slug}`,
         title: postData.title,
+        author: user.username,
         body: postData.body,
         slug: postData.slug,
         createdAt: post.createdAt.toISOString()
@@ -292,32 +293,51 @@ class Data {
       item.string as string,
       item.body as string,
       item.slug as string,
+      item.author as string,
       new Date(item.createdAt as string)
     ))
   }
 
-  async getPost (username: string, slug: string): Promise<Post> {
-    console.log(`Fetching post: ${username}/${slug}`)
+  async getPost (username: string, postSlug: string): Promise<Post> {
+    const slug = `${username}/${postSlug}`
+    console.log(`Fetching post: ${slug}`)
+
     const payload = {
-      Key: {
-        PK: `USER#${username}`,
-        SK: `POST#${slug}`
+      ExpressionAttributeNames: {
+        '#gsi2pk': 'GSI2PK'
       },
+      ExpressionAttributeValues: {
+        ':slug': `POST#${slug}`
+      },
+      ScanIndexForward: true,
+      KeyConditionExpression: '#gsi2pk = :slug',
+      IndexName: 'GSI2',
       TableName: this.tableName
     }
-    const command = new GetCommand(payload)
+    const command = new QueryCommand(payload)
     const response = await this.ddb.send(command)
     console.log(response)
 
-    if (response.Item === undefined) {
-      throw new UserNotFoundError(`${username} does not exist.`)
+    if (response.Items === undefined || response.Count === 0) {
+      throw new PostNotFound(`${slug} does not exist.`)
     }
 
+    const postItem = response.Items.pop() as Record<string, unknown>
+    const commentItems = response.Items
+
     return new Post(
-      response.Item.title as string,
-      response.Item.body as string,
-      response.Item.slug as string,
-      new Date(response.Item.createdAt as string)
+      postItem.title as string,
+      postItem.body as string,
+      postItem.slug as string,
+      postItem.author as string,
+      new Date(postItem.createdAt as string),
+      commentItems.map(commentData => new Comment(
+        commentData.post as string,
+        commentData.author as string,
+        commentData.body as string,
+        new Date(commentData.createdAt as string),
+        commentData.uuid as string
+      ))
     )
   }
 
