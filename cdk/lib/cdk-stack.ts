@@ -112,14 +112,22 @@ export class CdkStack extends cdk.Stack {
     userPosts.addMethod('GET', new apigw.LambdaIntegration(userPostHandler), { authorizer: auth })
     blogTable.grantReadData(userPostHandler)
 
+    const userPost = userPosts.addResource('{post}')
     const postDetailHandler = new NodejsFunction(this, 'PostDetailHandler', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'handler',
       entry: path.join(__dirname, 'lambda/api/users/posts/post/get.ts')
     })
-    const userPost = userPosts.addResource('{post}')
     userPost.addMethod('GET', new apigw.LambdaIntegration(postDetailHandler), { authorizer: auth })
     blogTable.grantReadData(postDetailHandler)
+
+    const postDeleteHandler = new NodejsFunction(this, 'PostDeleteHandler', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'handler',
+      entry: path.join(__dirname, 'lambda/api/users/posts/post/delete.ts')
+    })
+    userPost.addMethod('DELETE', new apigw.LambdaIntegration(postDeleteHandler), { authorizer: auth })
+    blogTable.grantReadWriteData(postDeleteHandler)
 
     const postCommentsHandler = new NodejsFunction(this, 'PostCommentsHandler', {
       runtime: lambda.Runtime.NODEJS_20_X,

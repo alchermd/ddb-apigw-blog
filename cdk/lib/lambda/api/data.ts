@@ -1,6 +1,13 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
+import {
+  DeleteCommand,
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  UpdateCommand
+} from '@aws-sdk/lib-dynamodb'
 
 export class UserNotFoundError extends Error {
 }
@@ -363,6 +370,22 @@ class Data {
     await this.ddb.send(command)
 
     return comment
+  }
+
+  async deletePost (user: User, post: Post): Promise<void> {
+    console.log(`User ${user.username} attempting to delete post ${post.slug}`)
+
+    const payload = {
+      Key: {
+        PK: `USER#${user.username}`,
+        SK: `POST#${post.slug}`
+      },
+      TableName: this.tableName
+    }
+    const command = new DeleteCommand(payload)
+    const response = await this.ddb.send(command)
+
+    console.log(response)
   }
 }
 
