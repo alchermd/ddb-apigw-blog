@@ -3,6 +3,18 @@
 An example of a blogging engine using API Gateway + Lambda functions as the backend, DynamoDB as the data store, and AWS
 CDK as the IaC tool.
 
+## Deployment
+
+The only prerequisite for deployment is a set of AWS credentials that is accessible locally (see [this AWS doc](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)). Once configured, run the following commands:
+
+```console
+$ cd cdk
+$ npm run synth # Review the changes
+$ npm run cdk deploy
+```
+
+The blog API is now accessible via the URL shown in the CDK output.
+
 ## Table Design
 
 Below are notes and artifacts created pre-development to give structure to the project.
