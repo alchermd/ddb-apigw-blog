@@ -1,3 +1,5 @@
+![](./docs/logo.png)
+
 # Blog Engine with DynamoDB and API Gateway
 
 An example of a blogging engine using API Gateway + Lambda functions as the backend, DynamoDB as the data store, and AWS
