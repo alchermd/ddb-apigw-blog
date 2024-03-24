@@ -103,3 +103,7 @@ Below are notes and artifacts created pre-development to give structure to the p
 | Post    | USER#\<username> | POST#\<slug>     | USER#\<username> | POST#\<created_at> | POST#\<slug> | POST#\<slug>          |
 | Comment | COMMENT#\<uuid>  | COMMENT#\<uuid>  |                  |                    | POST#\<slug> | COMMENT#\<created_at> |
 
+## Disclaimer and License 
+
+This project is not fit for production use and a lot of features, particularly security-related, are stripped out for simplicity's sake. See the
+[LICENSE file](./LICENSE) for more information.
