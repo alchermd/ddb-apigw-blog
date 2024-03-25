@@ -17,6 +17,11 @@ $ npm run cdk deploy
 
 The blog API is now accessible via the URL shown in the CDK output.
 
+## Usage
+
+An API Key is needed to access protected actions such as creation of posts and adding comments. To get one, you must create an account on the  `/register` endpoint and
+then log in using the `/login` endpoint. An API Key will then be returned as a response, which can then be added as an HTTP header in the form of `Authorization: api-key-1234` to access the protected resources.
+
 ## Table Design
 
 Below are notes and artifacts created pre-development to give structure to the project.
